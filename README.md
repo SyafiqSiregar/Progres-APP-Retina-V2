@@ -79,5 +79,5 @@ npx cap open android
 
 ---
 <div align="center">
-  Dibuat dengan ❤️ oleh SysDev
+  Dibuat oleh SysDev
 </div>
