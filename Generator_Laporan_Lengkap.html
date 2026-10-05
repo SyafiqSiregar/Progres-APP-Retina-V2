@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Sistem Laporan Mingguan Progres CCTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body { 
+            font-family: var(--font-sans); 
+            background-color: #f1f5f9;
+            color: #0f172a;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-mono-num {
+            font-family: var(--font-mono);
+        }
+
+        /* Focus state for keyboard accessibility */
+        :focus-visible {
+            outline: 2px solid #2563eb !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Custom scrollbar for form panel */
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-track { background: #f8fafc; }
+        .sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Print Specific Styling (Precise A4) */
+        @media print {
+            .no-print { display: none !important; }
+            html, body { 
+                background-color: #ffffff !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                height: auto !important; 
+                overflow: visible !important;
+                color: #000000 !important;
+            }
+            .a4-page {
+                width: 210mm !important;
+                min-height: 297mm !important;
+                margin: 0 !important;
+                padding: 15mm 20mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                page-break-after: always;
+                break-after: page;
+                transform: none !important;
+            }
+            .a4-page:last-child { page-break-after: auto; }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        /* A4 Page Layout */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: #ffffff;
+            margin: 0 auto 30px auto;
+            padding: 15mm 20mm;
+            box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.1);
+            border: 1px solid #cbd5e1;
+            position: relative;
+            box-sizing: border-box;
+            color: #0f172a;
+        }
+
+        /* Typography & Table for Engineering Report */
+        .pdf-title { color: #0f172a; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+        .pdf-subtitle { color: #1e40af; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+        
+        .pdf-table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 16px; }
+        .pdf-table th { background-color: #0f172a; color: #ffffff; padding: 7px 8px; text-align: center; border: 1px solid #334155; font-weight: 700; }
+        .pdf-table td { padding: 6.5px 8px; border: 1px solid #cbd5e1; text-align: center; color: #1e293b; }
+        .pdf-table td.text-left { text-align: left; }
+        
+        .section-header { 
+            font-size: 11px; 
+            font-weight: 800; 
+            color: #0f172a; 
+            border-left: 4px solid #0f172a; 
+            padding-left: 8px; 
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Form UI Tokens */
+        .form-label { display: block; font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem; }
+        .form-input { 
+            width: 100%; 
+            border: 1px solid #cbd5e1; 
+            background-color: #ffffff;
+            border-radius: 0.5rem; 
+            padding: 0.55rem 0.75rem; 
+            font-size: 0.85rem; 
+            color: #0f172a;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease; 
+        }
+        .form-input:hover { border-color: #94a3b8; }
+        .form-input:focus { 
+            outline: none; 
+            border-color: #2563eb; 
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2); 
+        }
+        .form-section { 
+            background: #ffffff; 
+            padding: 1.25rem; 
+            border-radius: 0.75rem; 
+            border: 1px solid #e2e8f0; 
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+            margin-bottom: 1.25rem; 
+        }
+        .form-section-title { 
+            font-size: 0.9rem; 
+            font-weight: 800; 
+            color: #0f172a; 
+            margin-bottom: 1rem; 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Scale Wrapper */
+        .pdf-scale-wrapper {
+            transform-origin: top center;
+            transition: transform 0.15s ease-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen overflow-hidden antialiased bg-slate-100">
+
+    <!-- MOBILE TOPBAR & TAB SWITCHER -->
+    <header class="no-print md:hidden bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between z-30 shrink-0">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-blue-700 text-white font-bold flex items-center justify-center text-xs">P</div>
+            <span class="font-bold text-slate-900 text-sm">ProgresApp</span>
+        </div>
+        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button id="btn-tab-form" onclick="setMobileTab('form')" class="px-3 py-1 rounded-md text-xs font-bold bg-white text-blue-700 shadow-xs">
+                Form
+            </button>
+            <button id="btn-tab-preview" onclick="setMobileTab('preview')" class="px-3 py-1 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900">
+                PDF Preview
+            </button>
+        </div>
+    </header>
+
+    <!-- LEFT SIDEBAR FORM PANEL -->
+    <div id="panel-form" class="no-print w-full md:w-[460px] lg:w-[480px] bg-slate-50 border-r border-slate-200 flex flex-col h-full z-10 shrink-0">
+        
+        <!-- Header -->
+        <div class="p-4 sm:p-5 border-b border-slate-200 bg-white flex justify-between items-center sticky top-0 z-20">
+            <div>
+                <h1 class="text-base font-bold text-slate-900">Editor Laporan Mingguan</h1>
+                <p class="text-xs text-slate-500">Isi data formulir untuk menghasilkan dokumen PDF</p>
+            </div>
+            <button onclick="window.print()" class="bg-slate-900 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold py-2.5 px-4 rounded-lg transition flex items-center gap-2 min-h-[44px] shadow-xs" title="Cetak Dokumen (Ctrl + P)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2-2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>Cetak PDF</span>
+            </button>
+        </div>
+
+        <!-- Form Scroll Body -->
+        <div class="sidebar flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 pb-24 md:pb-8">
+            
+            <!-- 1. INFORMASI PROYEK -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <span>1. Informasi Umum Proyek</span>
+                    <span class="text-[11px] font-normal text-slate-400 font-mono-num" id="out_top_nodok">WPR/CCTV/2026/010</span>
+                </h2>
+                <div class="space-y-3.5">
+                    <div>
+                        <label class="form-label">Logo Kop Dokumen</label>
+                        <div class="flex items-center gap-3">
+                            <div class="border border-slate-200 rounded-lg p-1 bg-white flex-1">
+                                <input type="file" accept="image/*" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" onchange="renderLogo(event)">
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Nama Proyek</label>
+                        <input type="text" class="form-input bind-input font-semibold" data-target="out_nama_proyek" value="RSIA BUNDA MENTENG">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label">Kategori Pekerjaan</label>
+                            <select class="form-input bg-white" onchange="document.getElementById('out_jenis_proyek').innerText = this.value">
+                                <option value="INSTALASI" selected>Instalasi</option>
+                                <option value="MAINTENANCE">Maintenance</option>
+                                <option value="SURVEY">Survey</option>
+                                <option value="TROUBLESHOOTING">Troubleshooting</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Periode</label>
+                            <input type="text" class="form-input bind-input" data-target="out_periode" value="Minggu Ke-02">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">Lokasi Pekerjaan</label>
+                        <input type="text" class="form-input bind-input" data-target="out_lokasi" value="Jl. Teuku Cik Ditiro No. 28, Menteng, Jakarta Pusat">
+                    </div>
+                    <div>
+                        <label class="form-label">Rentang Tanggal Pelaksanaan</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input type="date" id="inp_tgl_mulai" class="form-input" onchange="updateTanggal()">
+                            <input type="date" id="inp_tgl_selesai" class="form-input" onchange="updateTanggal()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. RINGKASAN CAPAIAN FISIK -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <span>2. Ringkasan Capaian Fisik</span>
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">Progres Aktual (%)</label>
+                        <input type="number" step="0.1" class="form-input bind-input font-bold text-blue-700" id="inp_prog_tot" data-target="out_prog_tot" value="68" oninput="updateProgressBar()">
+                    </div>
+                    <div>
+                        <label class="form-label">Target Rencana (%)</label>
+                        <input type="number" step="0.1" class="form-input bind-input" id="inp_prog_target" data-target="out_prog_target" value="70" oninput="updateProgressBar()">
+                    </div>
+                    <div>
+                        <label class="form-label">Kamera Terpasang (Unit)</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_kam" value="32 / 48">
+                    </div>
+                    <div>
+                        <label class="form-label">Keterangan Kamera</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_kam_ket" value="Unit fisik mounting & camera">
+                    </div>
+                    <div>
+                        <label class="form-label">Penarikan Kabel (Meter)</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_kab" value="1.850 m">
+                    </div>
+                    <div>
+                        <label class="form-label">Keterangan Kabel</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_kab_ket" value="Dari total rencana 2.200 m">
+                    </div>
+                    <div>
+                        <label class="form-label">Status Server & NVR</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_svr" value="Normal">
+                    </div>
+                    <div>
+                        <label class="form-label">Keterangan Server</label>
+                        <input type="text" class="form-input bind-input" data-target="out_sum_svr_ket" value="Rak Server & NVR Ready">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. RINCIAN BOBOT PEKERJAAN (WBS) -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <span>3. Bobot Pekerjaan (WBS)</span>
+                </h2>
+                <div id="wbs-inputs" class="space-y-3">
+                    <!-- Dinamis via JS -->
+                </div>
+            </div>
+
+            <!-- 4. LOG KENDALA & SOLUSI -->
+            <div class="form-section">
+                <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-2">
+                    <h2 class="form-section-title !mb-0 !border-0 !p-0">4. Log Kendala & Mitigasi</h2>
+                    <button onclick="addKendalaRow()" class="text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1 min-h-[36px]">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        <span>Tambah Kendala</span>
+                    </button>
+                </div>
+                <div id="kendala-inputs" class="space-y-3"></div>
+            </div>
+
+            <!-- 5. DOKUMENTASI VISUAL -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <span>5. Dokumentasi Lapangan</span>
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col">
+                        <label class="form-label">Foto 1</label>
+                        <div class="mb-1.5 relative border border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-2 bg-white text-center cursor-pointer h-24 flex items-center justify-center overflow-hidden group">
+                            <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="renderImage(event, 'img1')">
+                            <span id="ph_img1" class="text-[11px] text-slate-500 font-medium">Upload Foto 1</span>
+                            <img id="img1" class="w-full h-full object-cover hidden rounded" alt="Foto 1">
+                        </div>
+                        <input type="text" class="form-input bind-input text-xs" data-target="out_cap1" value="Pemasangan Conduit Lt. 2" placeholder="Keterangan">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="form-label">Foto 2</label>
+                        <div class="mb-1.5 relative border border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-2 bg-white text-center cursor-pointer h-24 flex items-center justify-center overflow-hidden group">
+                            <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="renderImage(event, 'img2')">
+                            <span id="ph_img2" class="text-[11px] text-slate-500 font-medium">Upload Foto 2</span>
+                            <img id="img2" class="w-full h-full object-cover hidden rounded" alt="Foto 2">
+                        </div>
+                        <input type="text" class="form-input bind-input text-xs" data-target="out_cap2" value="Instalasi Kamera Lobi" placeholder="Keterangan">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="form-label">Foto 3</label>
+                        <div class="mb-1.5 relative border border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-2 bg-white text-center cursor-pointer h-24 flex items-center justify-center overflow-hidden group">
+                            <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="renderImage(event, 'img3')">
+                            <span id="ph_img3" class="text-[11px] text-slate-500 font-medium">Upload Foto 3</span>
+                            <img id="img3" class="w-full h-full object-cover hidden rounded" alt="Foto 3">
+                        </div>
+                        <input type="text" class="form-input bind-input text-xs" data-target="out_cap3" value="Terminasi Kabel Patch Panel" placeholder="Keterangan">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="form-label">Foto 4</label>
+                        <div class="mb-1.5 relative border border-dashed border-slate-300 hover:border-blue-500 rounded-lg p-2 bg-white text-center cursor-pointer h-24 flex items-center justify-center overflow-hidden group">
+                            <input type="file" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="renderImage(event, 'img4')">
+                            <span id="ph_img4" class="text-[11px] text-slate-500 font-medium">Upload Foto 4</span>
+                            <img id="img4" class="w-full h-full object-cover hidden rounded" alt="Foto 4">
+                        </div>
+                        <input type="text" class="form-input bind-input text-xs" data-target="out_cap4" value="Material On-Site" placeholder="Keterangan">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. PENGESAHAN TANDA TANGAN -->
+            <div class="form-section">
+                <h2 class="form-section-title">
+                    <span>6. Pengesahan Dokumen</span>
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="form-label">Dibuat Oleh (Kontraktor)</label>
+                        <input type="text" class="form-input bind-input" data-target="out_pm" value="Ahmad Rifai, S.T.">
+                    </div>
+                    <div>
+                        <label class="form-label">Diperiksa Oleh (Pengawas/MK)</label>
+                        <input type="text" class="form-input bind-input" data-target="out_se" value="Ir. Budi Santoso">
+                    </div>
+                    <div>
+                        <label class="form-label">Disetujui Oleh (Klien/Owner)</label>
+                        <input type="text" class="form-input bind-input" data-target="out_owner" value="dr. Hendra Wijaya">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- RIGHT PREVIEW PANEL (A4 SHEETS) -->
+    <div id="panel-preview" class="flex-1 overflow-y-auto bg-slate-300 p-4 sm:p-6 lg:p-8 flex flex-col items-center pdf-viewer hidden md:flex">
+        
+        <div id="scale-container" class="pdf-scale-wrapper flex flex-col items-center">
+            
+            <!-- HALAMAN 1 (A4) -->
+            <div class="a4-page">
+                
+                <!-- Official Header -->
+                <div class="flex justify-between items-start border-b-2 border-slate-900 pb-3 mb-4">
+                    <div class="flex items-center gap-4">
+                        <img id="out_logo" class="hidden h-12 max-w-[120px] object-contain" alt="Logo">
+                        <div>
+                            <h1 class="pdf-title">LAPORAN MINGGUAN PROGRES</h1>
+                            <h2 class="pdf-subtitle">PEKERJAAN <span id="out_jenis_proyek">INSTALASI</span> SISTEM CCTV</h2>
+                        </div>
+                    </div>
+                    <div class="text-right text-[10px] border border-slate-300 p-2 rounded bg-slate-50 w-48 text-slate-700 leading-relaxed">
+                        <p><span class="font-bold">Periode:</span> <span id="out_periode">Minggu Ke-02</span></p>
+                        <p><span class="font-bold">Rentang:</span> <span id="out_tanggal">15 Sep - 25 Sep 2026</span></p>
+                        <p><span class="font-bold">No. Dok:</span> <span id="out_nodok">WPR/CCTV/2026/010</span></p>
+                    </div>
+                </div>
+
+                <!-- Info Proyek Bar -->
+                <div class="flex justify-between border border-slate-300 rounded p-3 mb-5 bg-slate-50 text-[11px] text-slate-800">
+                    <div class="w-1/2 pr-3">
+                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Nama Proyek</p>
+                        <p class="font-bold text-[12px]" id="out_nama_proyek">RSIA BUNDA MENTENG</p>
+                    </div>
+                    <div class="w-1/2 pl-3 border-l border-slate-200">
+                        <p class="text-[9px] text-slate-500 font-bold uppercase mb-0.5">Lokasi Pekerjaan</p>
+                        <p class="font-medium text-[11px]" id="out_lokasi">Jl. Teuku Cik Ditiro No. 28, Menteng, Jakarta Pusat</p>
+                    </div>
+                </div>
+
+                <!-- 1. Ringkasan Eksekutif -->
+                <div class="section-header">1. RINGKASAN EKSEKUTIF PROGRES PROYEK</div>
+                <div class="grid grid-cols-4 gap-3 mb-5">
+                    <div class="border border-blue-300 rounded p-2.5 relative overflow-hidden bg-white">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-blue-700"></div>
+                        <p class="text-[9px] font-bold text-slate-500 mb-0.5 uppercase">Progres Total</p>
+                        <p class="text-xl font-extrabold text-slate-900 mb-0.5"><span id="out_prog_tot">68</span>%</p>
+                        <div class="w-full bg-slate-200 h-1.5 rounded-full mb-1 overflow-hidden"><div id="bar_prog" class="bg-blue-700 h-1.5 rounded-full" style="width: 68%"></div></div>
+                        <p class="text-[8px] text-slate-500">Target: <span id="out_prog_target">70</span>% (Deviasi: <span id="out_prog_dev_tot" class="font-semibold">-2.0%</span>)</p>
+                    </div>
+                    <div class="border border-slate-300 rounded p-2.5 bg-white">
+                        <p class="text-[9px] font-bold text-slate-500 mb-0.5 uppercase">Kamera Terpasang</p>
+                        <p class="text-base font-extrabold text-slate-900 mb-0.5" id="out_sum_kam">32 / 48</p>
+                        <p class="text-[8px] text-slate-500 leading-tight" id="out_sum_kam_ket">Unit fisik mounting & camera</p>
+                    </div>
+                    <div class="border border-slate-300 rounded p-2.5 bg-white">
+                        <p class="text-[9px] font-bold text-slate-500 mb-0.5 uppercase">Penarikan Kabel</p>
+                        <p class="text-base font-extrabold text-slate-900 mb-0.5" id="out_sum_kab">1.850 m</p>
+                        <p class="text-[8px] text-slate-500 leading-tight" id="out_sum_kab_ket">Dari total rencana 2.200 m</p>
+                    </div>
+                    <div class="border border-amber-300 rounded p-2.5 bg-white relative">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+                        <p class="text-[9px] font-bold text-slate-500 mb-0.5 uppercase">Status Server</p>
+                        <p class="text-xs font-extrabold text-slate-900 mb-0.5" id="out_sum_svr">Normal</p>
+                        <p class="text-[8px] text-slate-500 leading-tight" id="out_sum_svr_ket">Rak Server & NVR Ready</p>
+                    </div>
+                </div>
+
+                <!-- 2. WBS Table -->
+                <div class="section-header">2. RINCIAN BOBOT & PROGRES PEKERJAAN (WBS)</div>
+                <table class="pdf-table" id="table-wbs">
+                    <thead>
+                        <tr>
+                            <th class="text-left w-2/5">Item Pekerjaan</th>
+                            <th>Bobot (%)</th>
+                            <th>Target (%)</th>
+                            <th>Aktual (%)</th>
+                            <th>Deviasi</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wbs-tbody">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+                <div class="text-[9px] text-slate-500 italic text-right mb-6">*Deviasi = Aktual - Target. Nilai minus menandakan deviasi keterlambatan.</div>
+            </div>
+
+            <!-- HALAMAN 2 (A4) -->
+            <div class="a4-page">
+                <!-- Header Mini Halaman 2 -->
+                <div class="flex justify-between items-center border-b border-slate-300 pb-2 mb-5">
+                    <p class="text-[9px] text-slate-500">RSIA BUNDA MENTENG &ndash; Laporan Progres Mingguan</p>
+                    <p class="text-[9px] text-slate-500">Halaman 2 dari 2</p>
+                </div>
+
+                <!-- 3. Log Kendala -->
+                <div class="section-header">3. LOG KENDALA, RISIKO & TINDAKAN KOREKSI</div>
+                <table class="pdf-table">
+                    <thead>
+                        <tr>
+                            <th class="w-8">No</th>
+                            <th class="text-left w-1/3">Deskripsi Kendala / Masalah</th>
+                            <th class="w-20">Dampak</th>
+                            <th class="text-left">Tindakan Koreksi / Mitigasi</th>
+                            <th class="w-24">PIC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kendala-tbody">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+
+                <!-- 4. Dokumentasi Visual -->
+                <div class="section-header mt-6">4. DOKUMENTASI VISUAL PEKERJAAN</div>
+                <div class="grid grid-cols-4 gap-3 mt-3">
+                    <div class="border border-slate-300 p-1 flex flex-col h-28 relative bg-slate-50">
+                        <div class="h-20 w-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="out_prev_img1" class="w-full h-full object-cover hidden" alt="">
+                            <span id="out_ph1" class="text-[9px] text-slate-400">Foto 1</span>
+                        </div>
+                        <p class="text-[8px] text-center mt-1 font-semibold px-1 truncate text-slate-800" id="out_cap1">Pemasangan Conduit Lt. 2</p>
+                    </div>
+                    <div class="border border-slate-300 p-1 flex flex-col h-28 relative bg-slate-50">
+                        <div class="h-20 w-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="out_prev_img2" class="w-full h-full object-cover hidden" alt="">
+                            <span id="out_ph2" class="text-[9px] text-slate-400">Foto 2</span>
+                        </div>
+                        <p class="text-[8px] text-center mt-1 font-semibold px-1 truncate text-slate-800" id="out_cap2">Instalasi Kamera Lobi</p>
+                    </div>
+                    <div class="border border-slate-300 p-1 flex flex-col h-28 relative bg-slate-50">
+                        <div class="h-20 w-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="out_prev_img3" class="w-full h-full object-cover hidden" alt="">
+                            <span id="out_ph3" class="text-[9px] text-slate-400">Foto 3</span>
+                        </div>
+                        <p class="text-[8px] text-center mt-1 font-semibold px-1 truncate text-slate-800" id="out_cap3">Terminasi Kabel Patch Panel</p>
+                    </div>
+                    <div class="border border-slate-300 p-1 flex flex-col h-28 relative bg-slate-50">
+                        <div class="h-20 w-full bg-slate-200 overflow-hidden flex items-center justify-center">
+                            <img id="out_prev_img4" class="w-full h-full object-cover hidden" alt="">
+                            <span id="out_ph4" class="text-[9px] text-slate-400">Foto 4</span>
+                        </div>
+                        <p class="text-[8px] text-center mt-1 font-semibold px-1 truncate text-slate-800" id="out_cap4">Material On-Site</p>
+                    </div>
+                </div>
+
+                <!-- 5. Tanda Tangan Pengesahan -->
+                <div class="grid grid-cols-3 gap-4 mt-16 text-center text-[10px] text-slate-900">
+                    <div>
+                        <p class="mb-14 font-bold">Dibuat Oleh (Kontraktor):</p>
+                        <p class="font-bold border-b border-slate-900 inline-block px-4 pb-0.5" id="out_pm">Ahmad Rifai, S.T.</p>
+                        <p class="mt-0.5 text-slate-600">Project Manager</p>
+                    </div>
+                    <div>
+                        <p class="mb-14 font-bold">Diperiksa Oleh (MK/Pengawas):</p>
+                        <p class="font-bold border-b border-slate-900 inline-block px-4 pb-0.5" id="out_se">Ir. Budi Santoso</p>
+                        <p class="mt-0.5 text-slate-600">Site Inspector</p>
+                    </div>
+                    <div>
+                        <p class="mb-14 font-bold">Disetujui Oleh (Klien/Owner):</p>
+                        <p class="font-bold border-b border-slate-900 inline-block px-4 pb-0.5" id="out_owner">dr. Hendra Wijaya</p>
+                        <p class="mt-0.5 text-slate-600">Pemberi Tugas</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- SCRIPT ENGINE -->
+    <script>
+        // Tab switcher for mobile
+        function setMobileTab(tab) {
+            const formPanel = document.getElementById('panel-form');
+            const previewPanel = document.getElementById('panel-preview');
+            const btnForm = document.getElementById('btn-tab-form');
+            const btnPreview = document.getElementById('btn-tab-preview');
+
+            if (tab === 'form') {
+                formPanel.classList.remove('hidden');
+                previewPanel.classList.add('hidden');
+                previewPanel.classList.remove('flex');
+                btnForm.className = 'px-3 py-1 rounded-md text-xs font-bold bg-white text-blue-700 shadow-xs';
+                btnPreview.className = 'px-3 py-1 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900';
+            } else {
+                formPanel.classList.add('hidden');
+                previewPanel.classList.remove('hidden');
+                previewPanel.classList.add('flex');
+                btnPreview.className = 'px-3 py-1 rounded-md text-xs font-bold bg-white text-blue-700 shadow-xs';
+                btnForm.className = 'px-3 py-1 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900';
+                applyAutoScale();
+            }
+        }
+
+        function applyAutoScale() {
+            const container = document.getElementById('scale-container');
+            if (!container) return;
+            const windowW = window.innerWidth;
+            const a4Width = 794;
+            if (windowW < 768) {
+                const scale = Math.min(1, Math.max(0.35, (windowW - 32) / a4Width));
+                container.style.transform = `scale(${scale})`;
+                container.style.marginBottom = `${(1 - scale) * -600}px`;
+            } else {
+                container.style.transform = 'scale(1)';
+                container.style.marginBottom = '0px';
+            }
+        }
+
+        window.addEventListener('resize', applyAutoScale);
+
+        // Data Models
+        const wbsData = [
+            { id: 'A', name: 'Persiapan & Pengadaan Material', bobot: 15.0, target: 15.0, aktual: 15.0, status: 'Selesai' },
+            { id: 'B', name: 'Pemasangan Pipa Conduit & Tray', bobot: 20.0, target: 20.0, aktual: 19.0, status: 'Progres' },
+            { id: 'C', name: 'Penarikan Kabel UTP & Fiber Optic', bobot: 25.0, target: 22.0, aktual: 21.0, status: 'Progres' },
+            { id: 'D', name: 'Pemasangan & Terminasi Kamera', bobot: 20.0, target: 13.0, aktual: 13.0, status: 'Progres' },
+            { id: 'E', name: 'Setup Ruang Kontrol & NVR', bobot: 12.0, target: 0.0, aktual: 0.0, status: 'Belum' },
+            { id: 'F', name: 'Testing, Commissioning & Training', bobot: 8.0, target: 0.0, aktual: 0.0, status: 'Belum' },
+        ];
+
+        let kendalaData = [
+            { desc: 'Akses plafon Lt. 3 tertutup dekorasi gypsum rapat tanpa manhole.', impact: 'Sedang', solution: 'Pengajuan pembuatan 2 titik access door baru ke tim sipil.', pic: 'Tim Sipil / Open' }
+        ];
+
+        // 2-Way Input Binding
+        document.querySelectorAll('.bind-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const targetId = e.target.getAttribute('data-target');
+                if (targetId) {
+                    const el = document.getElementById(targetId);
+                    if (el) el.innerText = e.target.value;
+                }
+            });
+        });
+
+        function updateProgressBar() {
+            let tot = parseFloat(document.getElementById('inp_prog_tot').value) || 0;
+            let tar = parseFloat(document.getElementById('inp_prog_target').value) || 0;
+            let dev = (tot - tar).toFixed(1);
+            document.getElementById('bar_prog').style.width = Math.min(tot, 100) + '%';
+            
+            let devEl = document.getElementById('out_prog_dev_tot');
+            devEl.innerText = `${dev > 0 ? '+' : ''}${dev}%`;
+            devEl.className = dev < 0 ? 'text-rose-700 font-bold' : 'text-slate-700 font-bold';
+        }
+
+        // Render WBS
+        function renderWBS() {
+            const formContainer = document.getElementById('wbs-inputs');
+            const pdfContainer = document.getElementById('wbs-tbody');
+            formContainer.innerHTML = '';
+            pdfContainer.innerHTML = '';
+
+            let sumBobot = 0, sumTarget = 0, sumAktual = 0;
+
+            wbsData.forEach((item, index) => {
+                let dev = (item.aktual - item.target).toFixed(1);
+                let devColor = dev < 0 ? 'text-rose-700 font-bold' : (dev > 0 ? 'text-emerald-700 font-bold' : 'text-slate-600 font-medium');
+                let badgeColor = item.status === 'Selesai' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 
+                                 (item.status === 'Progres' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-slate-100 text-slate-700 border border-slate-300');
+
+                formContainer.innerHTML += `
+                    <div class="bg-white border border-slate-200 p-3 rounded-lg">
+                        <p class="text-xs font-bold text-slate-900 mb-2 truncate" title="${item.name}">${item.name}</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div><label class="form-label text-[10px]">Target (%)</label><input type="number" step="0.1" class="form-input text-xs py-1.5 px-2" value="${item.target}" oninput="updateWBS(${index}, 'target', this.value)"></div>
+                            <div><label class="form-label text-[10px]">Aktual (%)</label><input type="number" step="0.1" class="form-input text-xs py-1.5 px-2" value="${item.aktual}" oninput="updateWBS(${index}, 'aktual', this.value)"></div>
+                            <div><label class="form-label text-[10px]">Status</label>
+                                <select class="form-input text-xs py-1.5 px-2 bg-white" onchange="updateWBS(${index}, 'status', this.value)">
+                                    <option ${item.status==='Selesai'?'selected':''}>Selesai</option>
+                                    <option ${item.status==='Progres'?'selected':''}>Progres</option>
+                                    <option ${item.status==='Belum'?'selected':''}>Belum</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                pdfContainer.innerHTML += `
+                    <tr>
+                        <td class="text-left font-medium text-slate-800">${item.name}</td>
+                        <td>${item.bobot.toFixed(1)}%</td>
+                        <td>${item.target.toFixed(1)}%</td>
+                        <td>${item.aktual.toFixed(1)}%</td>
+                        <td class="${devColor}">${dev > 0 ? '+' : ''}${dev}%</td>
+                        <td><span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}">${item.status}</span></td>
+                    </tr>
+                `;
+
+                sumBobot += item.bobot; sumTarget += item.target; sumAktual += item.aktual;
+            });
+
+            let devTot = (sumAktual - sumTarget).toFixed(1);
+            let devTotColor = devTot < 0 ? 'text-rose-700 font-bold' : 'text-slate-900 font-bold';
+            pdfContainer.innerHTML += `
+                <tr class="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+                    <td class="text-left">TOTAL</td>
+                    <td>${sumBobot.toFixed(1)}%</td>
+                    <td>${sumTarget.toFixed(1)}%</td>
+                    <td>${sumAktual.toFixed(1)}%</td>
+                    <td class="${devTotColor}">${devTot > 0 ? '+' : ''}${devTot}%</td>
+                    <td class="text-slate-600">-</td>
+                </tr>
+            `;
+        }
+
+        window.updateWBS = function(index, field, value) {
+            if(field === 'status') wbsData[index][field] = value;
+            else wbsData[index][field] = parseFloat(value) || 0;
+            renderWBS();
+        }
+
+        // Render Kendala
+        function renderKendala() {
+            const formContainer = document.getElementById('kendala-inputs');
+            const pdfContainer = document.getElementById('kendala-tbody');
+            formContainer.innerHTML = '';
+            pdfContainer.innerHTML = '';
+
+            if (kendalaData.length === 0) {
+                pdfContainer.innerHTML = `<tr><td colspan="5" class="text-slate-500 py-3 italic">Tidak ada kendala teknis yang dicatat pada periode ini.</td></tr>`;
+            }
+
+            kendalaData.forEach((item, index) => {
+                formContainer.innerHTML += `
+                    <div class="bg-white border border-slate-200 p-3.5 rounded-lg relative space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-700">Kendala #${index+1}</span>
+                            <button onclick="removeKendalaRow(${index})" class="text-slate-400 hover:text-rose-600 p-1" aria-label="Hapus kendala">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <textarea class="form-input text-xs" rows="2" placeholder="Uraikan kendala..." oninput="updateKendala(${index}, 'desc', this.value)">${item.desc}</textarea>
+                        <textarea class="form-input text-xs" rows="2" placeholder="Uraikan solusi..." oninput="updateKendala(${index}, 'solution', this.value)">${item.solution}</textarea>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="form-label text-[10px]">Tingkat Dampak</label>
+                                <select class="form-input text-xs bg-white py-1.5" onchange="updateKendala(${index}, 'impact', this.value)">
+                                    <option ${item.impact==='Tinggi'?'selected':''}>Tinggi</option>
+                                    <option ${item.impact==='Sedang'?'selected':''}>Sedang</option>
+                                    <option ${item.impact==='Rendah'?'selected':''}>Rendah</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label text-[10px]">Penanggung Jawab (PIC)</label>
+                                <input type="text" class="form-input text-xs py-1.5" placeholder="PIC / Status" value="${item.pic}" oninput="updateKendala(${index}, 'pic', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                let impactColor = item.impact === 'Tinggi' ? 'bg-rose-100 text-rose-800' : (item.impact === 'Sedang' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700');
+                pdfContainer.innerHTML += `
+                    <tr>
+                        <td>${index+1}</td>
+                        <td class="text-left text-[10px]">${item.desc}</td>
+                        <td><span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${impactColor}">${item.impact}</span></td>
+                        <td class="text-left text-[10px]">${item.solution}</td>
+                        <td class="text-[9px] font-semibold">${item.pic}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.addKendalaRow = function() {
+            kendalaData.push({ desc: '', impact: 'Rendah', solution: '', pic: '' });
+            renderKendala();
+        }
+        window.removeKendalaRow = function(index) {
+            kendalaData.splice(index, 1);
+            renderKendala();
+        }
+        window.updateKendala = function(index, field, value) {
+            kendalaData[index][field] = value;
+            renderKendala();
+        }
+
+        // Image Handling
+        window.renderLogo = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const logoEl = document.getElementById('out_logo');
+                    logoEl.src = e.target.result;
+                    logoEl.classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.renderImage = function(event, imgId) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgForm = document.getElementById(imgId);
+                    if (imgForm) {
+                        imgForm.src = e.target.result;
+                        imgForm.classList.remove('hidden');
+                        const phForm = document.getElementById('ph_' + imgId);
+                        if (phForm) phForm.classList.add('hidden');
+                    }
+                    const num = imgId.replace('img', '');
+                    const prevImg = document.getElementById('out_prev_img' + num);
+                    const prevPh = document.getElementById('out_ph' + num);
+                    if (prevImg) {
+                        prevImg.src = e.target.result;
+                        prevImg.classList.remove('hidden');
+                    }
+                    if (prevPh) prevPh.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Date formatting
+        window.updateTanggal = function() {
+            const mulai = document.getElementById('inp_tgl_mulai').value;
+            const selesai = document.getElementById('inp_tgl_selesai').value;
+            const formatTanggal = (dateStr) => {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+                return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+            };
+            
+            let result = '-';
+            if (mulai && selesai) {
+                result = `${formatTanggal(mulai)} - ${formatTanggal(selesai)}`;
+            } else if (mulai) {
+                result = formatTanggal(mulai);
+            }
+            document.getElementById('out_tanggal').innerText = result;
+        }
+
+        function initAutoGenerate() {
+            const num = '010';
+            const year = new Date().getFullYear();
+            const docNo = `WPR/CCTV/${year}/${num}`;
+            document.getElementById('out_nodok').innerText = docNo;
+            document.getElementById('out_top_nodok').innerText = docNo;
+
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+            
+            document.getElementById('inp_tgl_mulai').value = todayStr;
+            document.getElementById('inp_tgl_selesai').value = todayStr;
+            updateTanggal();
+            applyAutoScale();
+        }
+
+        renderWBS();
+        renderKendala();
+        updateProgressBar();
+        initAutoGenerate();
+    </script>
+</body>
+</html>

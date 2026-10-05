@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-slate-900" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>ProgresApp - Mobile Field Inspector</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Font & Icon Dependencies -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          },
+          colors: {
+            ios: {
+              systemBlue: '#007AFF',
+              systemIndigo: '#5856D6',
+              systemTeal: '#30B0C7',
+              systemGreen: '#34C759',
+              systemOrange: '#FF9500',
+              systemRed: '#FF3B30',
+            }
+          },
+          boxShadow: {
+            'vision': '0 12px 36px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04)',
+            'vision-lg': '0 20px 48px -6px rgba(15, 23, 42, 0.12), 0 8px 24px -4px rgba(15, 23, 42, 0.06)',
+            'glass-specular': 'inset 0 1px 1px 0 rgba(255, 255, 255, 0.9), 0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+            'neon-blue': '0 4px 20px -2px rgba(0, 122, 255, 0.45)',
+            'neon-green': '0 0 16px -2px rgba(52, 199, 89, 0.5)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom CSS for iOS & VisionOS Frosted Glass & Spatial Lighting -->
+<style data-purpose="custom-glass-effects">
+    * {
+      -webkit-tap-highlight-color: transparent;
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Apple Spatial Glass Layer */
+    .vision-card {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.72) 100%);
+      backdrop-filter: blur(28px) saturate(200%);
+      -webkit-backdrop-filter: blur(28px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.07), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .vision-card-darker {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.85) 100%);
+      backdrop-filter: blur(32px) saturate(190%);
+      -webkit-backdrop-filter: blur(32px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 14px 40px -6px rgba(15, 23, 42, 0.08), inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 1);
+    }
+
+    .glass-topbar {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+      backdrop-filter: blur(30px) saturate(190%);
+      -webkit-backdrop-filter: blur(30px) saturate(190%);
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+    }
+
+    .glass-floating-dock {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.74) 100%);
+      backdrop-filter: blur(32px) saturate(210%);
+      -webkit-backdrop-filter: blur(32px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 20px 48px -8px rgba(15, 23, 42, 0.16), 0 4px 12px 0 rgba(0, 0, 0, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    /* Subtle pulsing glowing indicator */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.15); }
+    }
+    .animate-glow {
+      animation: pulse-glow 2.4s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-800 antialiased font-sans flex justify-center selection:bg-blue-500/20">
+<!-- Mobile Viewport Container (~393px-430px iOS standard) -->
+<div class="relative w-full max-w-[430px] min-h-screen bg-slate-50 flex flex-col shadow-2xl overflow-x-hidden pb-32">
+<!-- Spatial Ambient Glowing Orbs Background (Vibrant visionOS depth behind frosted cards) -->
+<div class="pointer-events-none absolute inset-0 overflow-hidden z-0">
+<div class="absolute -top-16 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-blue-400/30 to-indigo-500/25 blur-3xl"></div>
+<div class="absolute top-48 -right-24 w-80 h-80 rounded-full bg-gradient-to-bl from-purple-400/25 to-pink-400/20 blur-3xl"></div>
+<div class="absolute top-[480px] -left-20 w-88 h-88 rounded-full bg-gradient-to-tr from-cyan-400/25 via-blue-400/20 to-emerald-400/15 blur-3xl"></div>
+<div class="absolute bottom-12 -right-16 w-80 h-80 rounded-full bg-gradient-to-tl from-indigo-500/20 to-blue-400/20 blur-3xl"></div>
+</div>
+<!-- BEGIN: TopBar -->
+<header class="sticky top-0 z-30 pt-3 pb-2.5 px-4 glass-topbar" data-purpose="status-and-top-nav">
+<!-- iOS Status Bar Placeholder Metrics -->
+<div class="flex items-center justify-between text-[11px] font-semibold text-slate-900 tracking-tight pb-2 px-1">
+<span class="font-bold">09:41</span>
+<div class="flex items-center space-x-1.5 text-xs text-slate-800">
+<i class="fa-solid fa-signal text-[10px]"></i>
+<i class="fa-solid fa-wifi text-[10px]"></i>
+<i class="fa-solid fa-battery-full text-xs"></i>
+</div>
+</div>
+<!-- App Branding & Field Inspector Profile -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center space-x-2.5">
+<!-- Brand Logo Squircle with Vision Glow -->
+<div class="h-10 w-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/35 ring-2 ring-white/80">
+<span class="font-black text-lg tracking-tight">P</span>
+</div>
+<div>
+<div class="flex items-center space-x-1.5">
+<span class="font-extrabold text-slate-900 text-base tracking-tight">ProgresApp</span>
+<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 border border-blue-500/30">CCTV</span>
+</div>
+<p class="text-[10px] text-slate-500 font-medium">RetinaCCTV x Ssgr</p>
+</div>
+</div>
+<!-- User Profile Pill (Admin Lapangan) -->
+<div class="flex items-center space-x-2 bg-white/80 backdrop-blur-md pl-2.5 pr-1.5 py-1 rounded-full border border-white shadow-sm ring-1 ring-slate-200/50" data-purpose="user-badge">
+<div class="text-right">
+<p class="text-[11px] font-bold text-slate-800 leading-tight">Admin Lapangan</p>
+<p class="text-[9px] text-slate-500 font-medium">Teknisi Pengawas</p>
+</div>
+<div class="h-7 w-7 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm ring-1 ring-white">
+  A
+</div>
+</div>
+</div>
+<!-- Compact Glass Search Bar -->
+<div class="mt-3 relative" data-purpose="search-box">
+<i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+<input class="w-full bg-white/70 backdrop-blur-md rounded-xl pl-9 pr-9 py-2 text-xs text-slate-800 placeholder-slate-400 border border-white/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all font-medium" placeholder="Cari proyek atau lokasi..." type="text"/>
+<button class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1" title="Filter pencarian">
+<i class="fa-solid fa-sliders text-[11px]"></i>
+</button>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- Main Content Flow -->
+<main class="relative z-10 px-4 pt-4 space-y-4">
+<!-- BEGIN: DashboardHeader -->
+<section class="flex items-end justify-between" data-purpose="dashboard-title-and-action">
+<div>
+<h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
+<p class="text-xs text-slate-500 font-medium mt-0.5">Ringkasan operasional dan progres instalasi terkini</p>
+</div>
+<!-- Quick Action "+ Tambah Proyek" with modern visionOS depth -->
+<button class="flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 active:scale-95 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 border border-white/20 transition-all">
+<i class="fa-solid fa-plus text-[11px]"></i>
+<span>Tambah</span>
+</button>
+</section>
+<!-- END: DashboardHeader -->
+<!-- BEGIN: MetricCardsGrid (2x2 Spatial Glass Bento Grid with Micro-charts & Indicators) -->
+<section class="grid grid-cols-2 gap-2.5" data-purpose="kpi-metrics-grid">
+<!-- Total Proyek Card -->
+<div class="vision-card rounded-2xl p-3.5 group hover:border-blue-300/60 transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-semibold text-slate-500 tracking-tight">Total Proyek</span>
+<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-xs shadow-md shadow-blue-500/25 ring-1 ring-white/60">
+<i class="fa-solid fa-folder-open text-[11px]"></i>
+</div>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">1</span>
+<!-- Micro sparkline bar visual -->
+<div class="flex items-end space-x-1 h-6 pb-0.5">
+<div class="w-1.5 h-3 bg-blue-200 rounded-full"></div>
+<div class="w-1.5 h-4.5 bg-blue-300 rounded-full"></div>
+<div class="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+</div>
+</div>
+<div class="mt-2 flex items-center">
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold border border-emerald-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span>1 proyek aktif</span>
+</span>
+</div>
+</div>
+<!-- Draft Aktif Card -->
+<div class="vision-card rounded-2xl p-3.5 group hover:border-amber-300/60 transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-semibold text-slate-500 tracking-tight">Draft Aktif</span>
+<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-xs shadow-md shadow-amber-500/25 ring-1 ring-white/60">
+<i class="fa-solid fa-clipboard-list text-[11px]"></i>
+</div>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">1</span>
+<!-- Radial pulse indicator -->
+<div class="relative flex items-center justify-center w-6 h-6">
+<span class="absolute w-5 h-5 rounded-full bg-amber-400/30 animate-ping"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white"></span>
+</div>
+</div>
+<div class="mt-2 flex items-center">
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 text-[10px] font-bold border border-amber-500/20">
+<i class="fa-solid fa-clock-rotate-left text-[8px]"></i>
+<span>1 berjalan</span>
+</span>
+</div>
+</div>
+<!-- Laporan Final Card -->
+<div class="vision-card rounded-2xl p-3.5 group hover:border-emerald-300/60 transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-semibold text-slate-500 tracking-tight">Laporan Final</span>
+<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xs shadow-md shadow-emerald-500/25 ring-1 ring-white/60">
+<i class="fa-solid fa-circle-check text-[11px]"></i>
+</div>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">0</span>
+<!-- Standby badge ring -->
+<div class="w-6 h-6 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+</div>
+</div>
+<div class="mt-2 flex items-center">
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-medium border border-slate-200">
+<i class="fa-solid fa-minus text-[8px]"></i>
+<span>Belum ada</span>
+</span>
+</div>
+</div>
+<!-- Total Laporan Card -->
+<div class="vision-card rounded-2xl p-3.5 group hover:border-indigo-300/60 transition-all">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[11px] font-semibold text-slate-500 tracking-tight">Total Laporan</span>
+<div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center text-xs shadow-md shadow-indigo-500/25 ring-1 ring-white/60">
+<i class="fa-solid fa-file-signature text-[11px]"></i>
+</div>
+</div>
+<div class="flex items-baseline justify-between">
+<span class="text-3xl font-extrabold text-slate-900 tracking-tight font-mono">1</span>
+<!-- Progress micro arc indicator -->
+<div class="flex items-center space-x-0.5">
+<span class="w-2 h-2 rounded-sm bg-blue-600"></span>
+<span class="w-2 h-2 rounded-sm bg-blue-600"></span>
+<span class="w-2 h-2 rounded-sm bg-blue-100"></span>
+</div>
+</div>
+<div class="mt-2 flex items-center">
+<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 text-[10px] font-bold border border-blue-500/20">
+<i class="fa-solid fa-check text-[8px]"></i>
+<span>Tersimpan</span>
+</span>
+</div>
+</div>
+</section>
+<!-- END: MetricCardsGrid -->
+<!-- BEGIN: FilterChips (Spatial Glass Pill Tabs) -->
+<section class="-mx-4 px-4 overflow-x-auto no-scrollbar flex items-center space-x-1.5 py-1" data-purpose="category-segmented-chips">
+<button class="px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold shadow-md shadow-blue-500/30 ring-1 ring-white/20 whitespace-nowrap active:scale-95 transition-all">
+  Semua
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-white/75 hover:bg-white text-slate-700 text-xs font-medium border border-white/80 shadow-sm backdrop-blur-md whitespace-nowrap active:bg-slate-100 transition-all">
+  Instalasi
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-white/75 hover:bg-white text-slate-700 text-xs font-medium border border-white/80 shadow-sm backdrop-blur-md whitespace-nowrap active:bg-slate-100 transition-all">
+  Maintenance
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-white/75 hover:bg-white text-slate-700 text-xs font-medium border border-white/80 shadow-sm backdrop-blur-md whitespace-nowrap active:bg-slate-100 transition-all">
+  Survey
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-white/75 hover:bg-white text-slate-700 text-xs font-medium border border-white/80 shadow-sm backdrop-blur-md whitespace-nowrap active:bg-slate-100 transition-all">
+  Troubleshooting
+</button>
+</section>
+<!-- END: FilterChips -->
+<!-- BEGIN: ActiveProjectsSection -->
+<section class="space-y-3" data-purpose="active-projects-container">
+<!-- Section Header with Project Counter -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<h2 class="text-sm font-extrabold text-slate-900 tracking-tight">Proyek Aktif</h2>
+<span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-700 font-bold text-[10px] border border-blue-500/30">
+  1 Proyek
+</span>
+</div>
+<button class="text-xs text-blue-600 font-semibold hover:text-blue-700 active:underline flex items-center space-x-1">
+<span>Lihat Semua</span>
+<i class="fa-solid fa-chevron-right text-[9px]"></i>
+</button>
+</div>
+<!-- Active Project Card: "COBA" - VisionOS Glass Hero Card -->
+<div class="vision-card-darker rounded-2xl p-4 relative overflow-hidden" data-purpose="project-detail-card">
+<!-- Top Row: Icon squircle, Details, & Live Tag -->
+<div class="flex items-start justify-between">
+<div class="flex items-center space-x-3">
+<!-- Vision Squircle CCTV Live Camera Icon -->
+<div class="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-500 text-white flex items-center justify-center text-xl shadow-lg shadow-blue-500/30 ring-2 ring-white/90">
+<i class="fa-solid fa-video"></i>
+<span class="absolute -top-1 -right-1 flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-white"></span>
+</span>
+</div>
+<div>
+<div class="flex items-center space-x-2">
+<h3 class="font-black text-slate-900 text-base leading-snug tracking-tight">COBA</h3>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 text-[9px] font-bold border border-emerald-500/20">
+    ONLINE
+  </span>
+</div>
+<div class="flex items-center space-x-1 text-slate-500 text-xs mt-0.5 font-medium">
+<i class="fa-solid fa-location-dot text-[11px] text-rose-500"></i>
+<span class="text-slate-700 font-semibold">sada</span>
+<span class="text-slate-300">·</span>
+<span class="text-[11px] text-slate-500">Kamera Outdoor 4K</span>
+</div>
+</div>
+</div>
+<!-- Type Badge -->
+<span class="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 text-[10px] font-bold tracking-wide uppercase border border-blue-500/20 shadow-sm">
+  Instalasi
+</span>
+</div>
+<!-- Project Metrics Pills -->
+<div class="mt-3.5 flex flex-wrap gap-2 text-[11px] font-medium">
+<span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-white/80 text-slate-700 border border-slate-200/80 shadow-xs">
+<i class="fa-regular fa-file-lines text-blue-500 text-[11px]"></i>
+<span class="font-semibold">1 Laporan</span>
+</span>
+<span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-800 border border-amber-500/25 shadow-xs">
+<span class="w-2 h-2 rounded-full bg-amber-500 animate-glow"></span>
+<span class="font-bold">1 Draft Berjalan</span>
+</span>
+<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 border border-slate-200">
+<i class="fa-solid fa-microchip text-[10px] text-slate-400"></i>
+<span>DVR 8CH Active</span>
+</span>
+</div>
+<!-- Progress Bar with Neon Cyan/Emerald Glow -->
+<div class="mt-4 pt-3 border-t border-slate-200/70">
+<div class="flex items-center justify-between text-xs mb-1.5 font-semibold">
+<span class="text-slate-500 text-[11px] font-medium">Progres Fisik Terakhir</span>
+<div class="flex items-center space-x-1.5">
+<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-700 text-[10px] font-bold">SELESAI</span>
+<span class="text-emerald-600 font-extrabold text-sm">100%</span>
+</div>
+</div>
+<div class="w-full bg-slate-200/70 rounded-full h-2.5 overflow-hidden p-0.5 shadow-inner">
+<div class="bg-gradient-to-r from-teal-400 via-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-700 shadow-neon-green" style="width: 100%"></div>
+</div>
+</div>
+<!-- Sub-Card: Laporan Mingguan Technical Workflow -->
+<div class="mt-3.5 bg-gradient-to-br from-white/90 to-slate-50/80 rounded-xl p-3 border border-slate-200/80 shadow-sm space-y-2">
+<div class="flex items-center justify-between text-[10px] font-bold text-slate-500 tracking-wider uppercase">
+<span class="flex items-center space-x-1">
+<i class="fa-solid fa-diagram-project text-blue-500 text-[10px]"></i>
+<span>Laporan Mingguan</span>
+</span>
+<span class="text-blue-600 font-semibold lowercase cursor-pointer hover:underline">klik untuk edit</span>
+</div>
+<div class="flex items-center justify-between bg-white rounded-xl p-2.5 border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer">
+<div class="flex items-center space-x-2.5">
+<div class="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 font-bold text-xs">
+  01
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900 leading-tight">Minggu Ke-01</p>
+<p class="text-[10px] text-slate-500 font-mono mt-0.5">WPR/CCTV/2026/001</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+  DRAFT
+</span>
+<i class="fa-solid fa-chevron-right text-slate-400 text-xs"></i>
+</div>
+</div>
+</div>
+<!-- Project Actions Toolbar -->
+<div class="mt-3 pt-2 flex items-center justify-between">
+<button class="w-8 h-8 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 flex items-center justify-center transition-colors" title="Hapus Proyek">
+<i class="fa-regular fa-trash-can text-sm"></i>
+</button>
+<button class="flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/25 active:scale-95 transition-all">
+<i class="fa-solid fa-plus text-[10px]"></i>
+<span>Laporan Baru</span>
+</button>
+</div>
+</div>
+<!-- Add Project Placeholder Card (Glass Specular Dotted Style) -->
+<div class="border-2 border-dashed border-slate-300/80 hover:border-blue-400 rounded-2xl p-4 text-center bg-white/40 backdrop-blur-md flex flex-col items-center justify-center active:scale-[0.99] transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center mb-1.5 shadow-sm border border-slate-200/80">
+<i class="fa-solid fa-plus text-base"></i>
+</div>
+<p class="text-xs font-bold text-slate-800">Tambah Proyek Baru</p>
+<p class="text-[11px] text-slate-500 max-w-[240px] mt-0.5">Daftarkan instalasi CCTV baru untuk memulai draft laporan mingguan</p>
+</div>
+</section>
+<!-- END: ActiveProjectsSection -->
+<!-- BEGIN: LatestReportsSection -->
+<section class="space-y-3 pt-1" data-purpose="latest-reports-list">
+<!-- Header with Segmented Filter -->
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<h2 class="text-sm font-extrabold text-slate-900 tracking-tight">Laporan Terbaru</h2>
+<span class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold text-[10px] flex items-center justify-center border border-blue-200">
+  1
+</span>
+</div>
+<!-- Micro Segmented Control (Semua, Draft, Final) -->
+<div class="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-[10px] font-bold">
+<button class="px-2.5 py-0.5 rounded-md bg-white text-slate-900 shadow-xs border border-white">Semua</button>
+<button class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900">DRAFT</button>
+<button class="px-2 py-0.5 rounded-md text-slate-600 hover:text-slate-900">FINAL</button>
+</div>
+</div>
+<!-- Report Feed Document Card -->
+<div class="vision-card rounded-2xl p-3.5 space-y-3">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center space-x-1.5">
+<span class="inline-block px-2 py-0.5 bg-blue-50 rounded text-[10px] font-mono font-bold text-blue-700 border border-blue-200">
+    WPR/CCTV/2026/001
+  </span>
+<span class="text-[10px] text-slate-400 font-medium">Rev 0.1</span>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-900 mt-1">COBA <span class="font-normal text-slate-300">·</span> <span class="text-slate-600 font-semibold">sada</span></h4>
+<p class="text-[11px] font-medium text-blue-600 flex items-center space-x-1 mt-0.5">
+<i class="fa-regular fa-calendar-check text-[10px]"></i>
+<span>Periode: Minggu Ke-01</span>
+</p>
+</div>
+</div>
+<!-- Status Pill -->
+<span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-300 shadow-xs">
+  DRAFT
+</span>
+</div>
+<!-- Progress Mini & Last Modified Timestamp -->
+<div class="pt-2 border-t border-slate-200/70 flex items-center justify-between text-xs">
+<div class="flex items-center space-x-2">
+<span class="text-[10px] text-slate-500 font-semibold">Progres:</span>
+<div class="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+<div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full shadow-neon-green" style="width: 100%"></div>
+</div>
+<span class="text-[10px] font-extrabold text-emerald-600">100%</span>
+</div>
+<div class="flex items-center space-x-1 text-[10px] text-slate-400 font-medium">
+<i class="fa-regular fa-clock text-[9px]"></i>
+<span>19 mnt lalu</span>
+</div>
+</div>
+<!-- Open Action Button -->
+<button class="w-full py-2 bg-gradient-to-r from-blue-50 to-indigo-50/80 hover:from-blue-100 hover:to-indigo-100 active:scale-[0.99] text-blue-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 border border-blue-200/70 transition-all shadow-xs">
+<span>Buka Dokumen</span>
+<i class="fa-solid fa-arrow-right text-[11px]"></i>
+</button>
+</div>
+</section>
+<!-- END: LatestReportsSection -->
+</main>
+<!-- BEGIN: FloatingiOSGlassTabBar -->
+<!-- VisionOS floating frosted glass dock -->
+<nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[395px] z-50 glass-floating-dock rounded-3xl p-1.5" data-purpose="floating-bottom-navigation">
+<div class="flex items-center justify-between px-1">
+<!-- Nav Item: Dashboard (Active) -->
+<button class="flex-1 py-1.5 flex flex-col items-center justify-center text-blue-600 transition-all">
+<div class="w-8 h-8 rounded-xl bg-blue-500/15 flex items-center justify-center shadow-xs">
+<i class="fa-solid fa-table-cells-large text-base"></i>
+</div>
+<span class="text-[9px] font-extrabold tracking-tight mt-0.5">Dashboard</span>
+</button>
+<!-- Nav Item: Proyek Aktif -->
+<button class="flex-1 py-1.5 flex flex-col items-center justify-center text-slate-400 hover:text-slate-700 transition-all">
+<div class="w-8 h-8 flex items-center justify-center relative">
+<i class="fa-solid fa-folder-closed text-base"></i>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 ring-2 ring-white"></span>
+</div>
+<span class="text-[9px] font-semibold tracking-tight mt-0.5">Proyek</span>
+</button>
+<!-- Center Action Button: Create New Fast Action with glowing neon edge -->
+<button class="mx-1 -mt-4 w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-neon-blue border-2 border-white active:scale-90 transition-transform">
+<i class="fa-solid fa-plus text-lg font-bold"></i>
+</button>
+<!-- Nav Item: Semua Laporan -->
+<button class="flex-1 py-1.5 flex flex-col items-center justify-center text-slate-400 hover:text-slate-700 transition-all">
+<div class="w-8 h-8 flex items-center justify-center relative">
+<i class="fa-solid fa-file-contract text-base"></i>
+<span class="absolute top-1 right-0.5 px-1 py-0.2 rounded-full bg-blue-100 text-[8px] font-bold text-blue-700 border border-blue-200">1</span>
+</div>
+<span class="text-[9px] font-semibold tracking-tight mt-0.5">Laporan</span>
+</button>
+<!-- Nav Item: Arsip Final -->
+<button class="flex-1 py-1.5 flex flex-col items-center justify-center text-slate-400 hover:text-slate-700 transition-all">
+<div class="w-8 h-8 flex items-center justify-center">
+<i class="fa-solid fa-box-archive text-base"></i>
+</div>
+<span class="text-[9px] font-semibold tracking-tight mt-0.5">Arsip</span>
+</button>
+</div>
+</nav>
+<!-- END: FloatingiOSGlassTabBar -->
+<!-- iOS Home Indicator -->
+<div class="fixed bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900/30 rounded-full z-50 pointer-events-none"></div>
+</div>
+<!-- Micro Interaction Handler -->
+<script data-purpose="lightweight-mobile-interactions">
+    document.addEventListener('DOMContentLoaded', () => {
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(12);
+          }
+        });
+      });
+    });
+  </script>
+</body></html>

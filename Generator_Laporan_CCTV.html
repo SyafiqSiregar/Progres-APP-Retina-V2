@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Laporan CCTV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        
+        /* Pengaturan Khusus untuk Print/PDF */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; margin: 0; padding: 0; }
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 10mm !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+            /* Memaksa elemen background (seperti progress bar) untuk tercetak */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        /* Tampilan Kertas A4 di Layar */
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 20px auto;
+            padding: 20mm;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen">
+
+    <!-- BAGIAN KIRI: FORM INPUT (Tidak ikut terprint) -->
+    <div class="no-print w-full md:w-1/3 bg-white p-6 border-r overflow-y-auto shadow-lg z-10">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800">📝 Form Laporan</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1">Nama Proyek</label>
+                <input type="text" id="inputNamaProyek" value="RSIA BUNDA MENTENG" class="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500" oninput="updatePreview()">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-semibold mb-1">Periode (Minggu Ke-)</label>
+                <input type="text" id="inputPeriode" value="Minggu Ke-02" class="w-full border p-2 rounded" oninput="updatePreview()">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1">Progres Total (%)</label>
+                <input type="number" id="inputProgres" value="68" class="w-full border p-2 rounded" oninput="updatePreview()">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1">Kamera Terpasang</label>
+                <input type="text" id="inputKamera" value="32 / 48" class="w-full border p-2 rounded" oninput="updatePreview()">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold mb-1">Upload Foto Progres 1</label>
+                <input type="file" id="inputFoto1" accept="image/*" class="w-full border p-1 rounded text-sm" onchange="previewImage(event, 'previewFoto1')">
+            </div>
+
+            <button onclick="window.print()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded mt-6 shadow-md transition duration-200">
+                🖨️ Cetak / Save as PDF
+            </button>
+            <p class="text-xs text-gray-500 mt-2 text-center">Tip: Saat dialog print muncul, pilih "Save as PDF" dan pastikan opsi "Background graphics" tercentang.</p>
+        </div>
+    </div>
+
+    <!-- BAGIAN KANAN: PREVIEW DOKUMEN (Bagian ini yang akan dicetak ke PDF) -->
+    <div class="w-full md:w-2/3 bg-gray-100 overflow-y-auto p-4 flex justify-center">
+        
+        <!-- Kertas A4 -->
+        <div class="a4-page relative">
+            
+            <!-- Header Dokumen -->
+            <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">LAPORAN PROGRES</h1>
+                    <h2 class="text-lg font-bold text-blue-600">PROYEK INSTALASI IP CCTV</h2>
+                </div>
+                <div class="text-right text-sm border p-3 rounded bg-gray-50">
+                    <p><span class="font-semibold">Periode:</span> <span id="outPeriode">Minggu Ke-02</span></p>
+                    <p><span class="font-semibold">No. Dok:</span> WPR/CCTV/2026/010</p>
+                </div>
+            </div>
+
+            <!-- Info Proyek -->
+            <div class="bg-blue-50/50 p-4 rounded border border-blue-100 mb-8 flex justify-between">
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold mb-1">NAMA PROYEK</p>
+                    <p class="font-bold text-sm" id="outNamaProyek">RSIA BUNDA MENTENG</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold mb-1">LOKASI PEKERJAAN</p>
+                    <p class="font-semibold text-sm">Jl. Teuku Cik Ditiro No. 28, Menteng</p>
+                </div>
+            </div>
+
+            <!-- Ringkasan Eksekutif -->
+            <h3 class="text-lg font-bold border-l-4 border-blue-600 pl-2 mb-4 text-gray-800">1. RINGKASAN EKSEKUTIF PROGRES PROYEK</h3>
+            
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <!-- Kartu Progres -->
+                <div class="border rounded-lg p-4 border-blue-300">
+                    <p class="text-xs font-bold text-gray-500 mb-2">PROGRES TOTAL PROYEK</p>
+                    <p class="text-3xl font-bold text-gray-900 mb-2"><span id="outProgresAngka">68</span>%</p>
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                        <div id="outProgresBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 68%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500">Target: 70%</p>
+                </div>
+                
+                <!-- Kartu Kamera -->
+                <div class="border rounded-lg p-4 border-gray-200">
+                    <p class="text-xs font-bold text-gray-500 mb-2">KAMERA TERPASANG</p>
+                    <p class="text-2xl font-bold text-gray-900 mb-1" id="outKamera">32 / 48</p>
+                    <p class="text-xs text-gray-500">Unit fisik mounting & camera</p>
+                </div>
+            </div>
+
+            <!-- Dokumentasi Visual -->
+            <h3 class="text-lg font-bold border-l-4 border-blue-600 pl-2 mb-4 text-gray-800">2. DOKUMENTASI VISUAL</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="border border-dashed border-gray-400 p-2 text-center h-48 flex flex-col items-center justify-center relative overflow-hidden rounded bg-gray-50">
+                    <img id="previewFoto1" class="absolute inset-0 w-full h-full object-cover hidden" />
+                    <span id="placeholderFoto1" class="text-gray-400 text-sm">Foto Progres 1<br>(Upload di panel kiri)</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script Interaktif -->
+    <script>
+        function updatePreview() {
+            document.getElementById('outNamaProyek').innerText = document.getElementById('inputNamaProyek').value;
+            document.getElementById('outPeriode').innerText = document.getElementById('inputPeriode').value;
+            
+            let progres = document.getElementById('inputProgres').value;
+            document.getElementById('outProgresAngka').innerText = progres;
+            document.getElementById('outProgresBar').style.width = progres + '%';
+
+            document.getElementById('outKamera').innerText = document.getElementById('inputKamera').value;
+        }
+
+        function previewImage(event, previewId) {
+            const input = event.target;
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgElement = document.getElementById(previewId);
+                    imgElement.src = e.target.result;
+                    imgElement.classList.remove('hidden');
+                    document.getElementById('placeholder' + previewId.replace('preview', '')).style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

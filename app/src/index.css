@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+/* Accessible focus ring for all interactive elements */
+:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+}
+
+/* Clean, standard scrollbar for readability */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Utility to hide scrollbar only when explicitly needed for horizontal carousels */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Surface & Card Standards (Anti-Slop Clean Surfaces) */
+.surface-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px -1px rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+}
+
+.surface-card-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.surface-card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.06), 0 4px 12px -4px rgba(15, 23, 42, 0.04);
+  transform: translateY(-2px);
+}
+
+/* Print Specifications (Precise A4 layout) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+  
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .pdf-scale-wrapper {
+    transform: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .a4-sheet {
+    width: 100% !important;
+    min-height: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 15mm 20mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+}
+
+@media screen {
+  .pdf-scale-wrapper {
+    transform: scale(var(--scale-val, 1));
+  }
+}
