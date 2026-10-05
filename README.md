@@ -162,5 +162,5 @@ A: Aplikasi ini mengambil data dari <code>app/src/db.js</code> sebagai <i>mock</
 <br/>
 
 <div align="center">
-  <sub>Dibangun dengan ketelitian & ❤️ oleh <b>SysDev</b></sub>
+  <sub>Dibangun oleh <b>SysDev</b></sub>
 </div>
